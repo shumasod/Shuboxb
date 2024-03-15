@@ -21,7 +21,7 @@ class RoutingTable:
     def get_next_hop(self, network):
         return self.routes.get(network)
 
-# ルーターを表すクラス
+# 
 class Router:
     def __init__(self, routing_table):
         self.routing_table = routing_table
