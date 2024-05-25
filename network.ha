@@ -1,11 +1,3 @@
-コードを実行可能な状態に修正しました。主な変更点は以下の通りです。
-
-1. `System.Random` モジュールをインポートしました。
-2. `getStdRandom` 関数を使用して乱数を生成するよう変更しました。
-3. `main` 関数内で `routerSegment1'` と `routerSegment2'` の初期化順序を入れ替えました。
-
-修正後のコードは以下の通りです。
-
 ```haskell
 import System.Random
 
