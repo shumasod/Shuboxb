@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エクスプローラー顧客管理システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        body {
+            background-image: url('explorer_background.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .overlay {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 50px;
+        }
+        .navbar {
+            background-color: rgba(0, 150, 199, 0.8) !important;
+        }
+        .btn-primary {
+            background-color: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+        .table {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        .table th {
+            background-color: rgba(0, 150, 199, 0.6);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">エクスプローラー CMS</a>
+            <button class="btn btn-light btn-sm ms-auto" onclick="openCustomerForm()">新規顧客</button>
+        </div>
+    </nav>
+
+    <div class="container overlay">
+        <h1 class="text-center mb-4">顧客探索システム</h1>
+        
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <input type="text" id="searchInput" class="form-control" placeholder="顧客を検索...">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100" onclick="searchCustomers()">探索開始</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover" id="customerTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>顧客名</th>
+                        <th>ステータス</th>
+                        <th>最終接触日</th>
+                        <th>アクション</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody">
+                    <!-- Customer data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Customer Form Modal -->
+    <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerModalLabel">顧客情報</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="customerForm">
+                        <input type="hidden" id="customerId">
+                        <div class="mb-3">
+                            <label for="customerName" class="form-label">顧客名</label>
+                            <input type="text" class="form-control" id="customerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerStatus" class="form-label">ステータス</label>
+                            <select class="form-select" id="customerStatus" required>
+                                <option value="アクティブ">アクティブ</option>
+                                <option value="保留中">保留中</option>
+                                <option value="非アクティブ">非アクティブ</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lastContactDate" class="form-label">最終接触日</label>
+                            <input type="date" class="form-control" id="lastContactDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCustomer()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+        let customers = [];
+
+        async function fetchCustomers() {
+            const response = await fetch(`${API_URL}/customers`);
+            customers = await response.json();
+            renderCustomers();
+        }
+
+        function renderCustomers() {
+            const tableBody = document.getElementById('customerTableBody');
+            tableBody.innerHTML = '';
+            customers.forEach(customer => {
+                const row = `
+                    <tr>
+                        <td>${customer.id}</td>
+                        <td>${customer.name}</td>
+                        <td><span class="badge bg-${customer.status === 'アクティブ' ? 'success' : 'warning'}">${customer.status}</span></td>
+                        <td>${customer.lastContactDate}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function openCustomerForm(customerId = null) {
+            const modal = new bootstrap.Modal(document.getElementById('customerModal'));
+            if (customerId) {
+                const customer = customers.find(c => c.id === customerId);
+                document.getElementById('customerId').value = customer.id;
+                document.getElementById('customerName').value = customer.name;
+                document.getElementById('customerStatus').value = customer.status;
+                document.getElementById('lastContactDate').value = customer.lastContactDate;
+            } else {
+                document.getElementById('customerForm').reset();
+                document.getElementById('customerId').value = '';
+            }
+            modal.show();
+        }
+
+        async function saveCustomer() {
+            const customerId = document.getElementById('customerId').value;
+            const customer = {
+                name: document.getElementById('customerName').value,
+                status: document.getElementById('customerStatus').value,
+                lastContactDate: document.getElementById('lastContactDate').value
+            };
+
+            if (customerId) {
+                await fetch(`${API_URL}/customers/${customerId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customer)
+                });
+            } else {
+                await fetch(`${API_URL}/customers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customer)
+                });
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
+            await fetchCustomers();
+        }
+
+        async function deleteCustomer(customerId) {
+            if (confirm('この顧客を削除してもよろしいですか？')) {
+                await fetch(`${API_URL}/customers/${customerId}`, { method: 'DELETE' });
+                await fetchCustomers();
+            }
+        }
+
+        function editCustomer(customerId) {
+            openCustomerForm(customerId);
+        }
+
+        function searchCustomers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredCustomers = customers.filter(customer => 
+                customer.name.toLowerCase().includes(searchTerm) || 
+                customer.status.toLowerCase().includes(searchTerm)
+            );
+            renderFilteredCustomers(filteredCustomers);
+        }
+
+        function renderFilteredCustomers(filteredCustomers) {
+            const tableBody = document.getElementById('customerTableBody');
+            tableBody.innerHTML = '';
+            filteredCustomers.forEach(customer => {
+                const row = `
+                    <tr>
+                        <td>${customer.id}</td>
+                        <td>${customer.name}</td>
+                        <td><span class="badge bg-${customer.status === 'アクティブ' ? 'success' : 'warning'}">${customer.status}</span></td>
+                        <td>${customer.lastContactDate}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Initial load
+        fetchCustomers();
+    </script>
+</body>
+</html>
