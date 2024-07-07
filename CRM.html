@@ -7,30 +7,42 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <style>
-        body {
-            background-image: url('explorer_background.jpg');
-            background-size: cover;
-            background-attachment: fixed;
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --background-color: #f4f4f4;
+            --text-color: #333;
         }
-        .overlay {
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 50px;
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Arial', sans-serif;
         }
         .navbar {
-            background-color: rgba(0, 150, 199, 0.8) !important;
+            background-color: var(--primary-color) !important;
         }
         .btn-primary {
-            background-color: #ff6b6b;
-            border-color: #ff6b6b;
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
         }
-        .table {
-            background-color: rgba(255, 255, 255, 0.9);
+        .btn-primary:hover {
+            background-color: #e67e22;
+            border-color: #e67e22;
         }
         .table th {
-            background-color: rgba(0, 150, 199, 0.6);
+            background-color: var(--primary-color);
             color: white;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(74, 144, 226, 0.1);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+        }
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
     </style>
 </head>
@@ -38,19 +50,29 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">エクスプローラー CMS</a>
-            <button class="btn btn-light btn-sm ms-auto" onclick="openCustomerForm()">新規顧客</button>
+            <button class="btn btn-light btn-sm ms-auto" onclick="openCustomerForm()">
+                <i class="fas fa-plus"></i> 新規顧客
+            </button>
         </div>
     </nav>
 
-    <div class="container overlay">
+    <div class="container mt-4">
         <h1 class="text-center mb-4">顧客探索システム</h1>
         
         <div class="row mb-4">
-            <div class="col-md-8">
-                <input type="text" id="searchInput" class="form-control" placeholder="顧客を検索...">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="顧客を検索..." oninput="debounce(searchCustomers, 300)()">
+                </div>
             </div>
-            <div class="col-md-4">
-                <button class="btn btn-primary w-100" onclick="searchCustomers()">探索開始</button>
+            <div class="col-md-6">
+                <select id="statusFilter" class="form-select" onchange="searchCustomers()">
+                    <option value="">すべてのステータス</option>
+                    <option value="アクティブ">アクティブ</option>
+                    <option value="保留中">保留中</option>
+                    <option value="非アクティブ">非アクティブ</option>
+                </select>
             </div>
         </div>
 
@@ -70,6 +92,12 @@
                 </tbody>
             </table>
         </div>
+
+        <nav aria-label="ページナビゲーション">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Pagination will be inserted here -->
+            </ul>
+        </nav>
     </div>
 
     <!-- Customer Form Modal -->
@@ -113,31 +141,75 @@
     <script>
         const API_URL = 'http://localhost:8080/api';
         let customers = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
         async function fetchCustomers() {
             const response = await fetch(`${API_URL}/customers`);
             customers = await response.json();
-            renderCustomers();
+            searchCustomers();
         }
 
-        function renderCustomers() {
+        function renderCustomers(filteredCustomers) {
             const tableBody = document.getElementById('customerTableBody');
             tableBody.innerHTML = '';
-            customers.forEach(customer => {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
+
+            paginatedCustomers.forEach(customer => {
                 const row = `
                     <tr>
                         <td>${customer.id}</td>
                         <td>${customer.name}</td>
-                        <td><span class="badge bg-${customer.status === 'アクティブ' ? 'success' : 'warning'}">${customer.status}</span></td>
-                        <td>${customer.lastContactDate}</td>
+                        <td><span class="badge bg-${getStatusColor(customer.status)}">${customer.status}</span></td>
+                        <td>${formatDate(customer.lastContactDate)}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editCustomer('${customer.id}')" aria-label="編集">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')" aria-label="削除">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             });
+
+            renderPagination(filteredCustomers.length);
+        }
+
+        function renderPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+                pagination.appendChild(li);
+            }
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            searchCustomers();
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'アクティブ': return 'success';
+                case '保留中': return 'warning';
+                case '非アクティブ': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('ja-JP', options);
         }
 
         function openCustomerForm(customerId = null) {
@@ -194,31 +266,21 @@
 
         function searchCustomers() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
             const filteredCustomers = customers.filter(customer => 
-                customer.name.toLowerCase().includes(searchTerm) || 
-                customer.status.toLowerCase().includes(searchTerm)
+                (customer.name.toLowerCase().includes(searchTerm) || 
+                customer.status.toLowerCase().includes(searchTerm)) &&
+                (statusFilter === '' || customer.status === statusFilter)
             );
-            renderFilteredCustomers(filteredCustomers);
+            renderCustomers(filteredCustomers);
         }
 
-        function renderFilteredCustomers(filteredCustomers) {
-            const tableBody = document.getElementById('customerTableBody');
-            tableBody.innerHTML = '';
-            filteredCustomers.forEach(customer => {
-                const row = `
-                    <tr>
-                        <td>${customer.id}</td>
-                        <td>${customer.name}</td>
-                        <td><span class="badge bg-${customer.status === 'アクティブ' ? 'success' : 'warning'}">${customer.status}</span></td>
-                        <td>${customer.lastContactDate}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
+        function debounce(func, delay) {
+            let timeoutId;
+            return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
         }
 
         // Initial load
