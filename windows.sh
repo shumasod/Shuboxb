@@ -14,7 +14,7 @@ class NetworkStatus {
     }
 }
 
-# Routing table representation
+# Routing table represet
 class RoutingTable {
     [System.Collections.Hashtable]$Routes = @{}
 
