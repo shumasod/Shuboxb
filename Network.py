@@ -1,6 +1,4 @@
-
 import random
-import time
 
 # ネットワークの状況を表すクラス
 class NetworkStatus:
@@ -67,24 +65,30 @@ def get_network_status(source, destination):
     elif source == "B" and destination == "A":
         return NetworkStatus("B-A", 0.2)
     else:
-        return NetworkStatus("Other", 0.05)
+        raise ValueError("Invalid source-destination pair")
 
 # パケットを送信する関数
 def send_packet(next_hop, destination, data):
-    print(f"Sending packet to {destination} via {next_hop} with data: {data}")
+    print(f"パケットを {next_hop} に送信中: {data} -> {destination}")
 
-# 例のルーティングテーブルとルーターのセットアップ
-routing_table = RoutingTable()
-routing_table.add_route("A-B", "Router1")
-routing_table.add_route("B-A", "Router2")
+# セグメント1のルーティングテーブル
+routing_table_segment1 = RoutingTable()
+routing_table_segment1.add_route("A-B", "Segment2")
+routing_table_segment1.add_route("B-A", "Segment2")
 
-router = Router(routing_table)
+# セグメント2のルーティングテーブル
+routing_table_segment2 = RoutingTable()
+routing_table_segment2.add_route("A-B", "Segment1")
+routing_table_segment2.add_route("B-A", "Segment1")
 
-# パケットをルーティングする例
-router.route_packet("A", "B", "Hello, B!")
-router.route_packet("B", "A", "Hello, A!")
-router.route_packet("C", "D", "Hello, D!")  # Otherネットワーク
+# セグメント1のルーター
+router_segment1 = Router(routing_table_segment1)
 
-# 統計情報の取得
-stats = router.get_statistics()
-print(stats)
+# セグメント2のルーター
+router_segment2 = Router(routing_table_segment2)
+
+# セグメント1からセグメント2への通信
+router_segment1.route_packet("A", "B", "データ1")
+
+# セグメント2からセグメント1への通信
+router_segment2.route_packet("B", "A", "データ2")
