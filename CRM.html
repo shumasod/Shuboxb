@@ -14,3 +14,16 @@ function escapeHtml(str) {
         "'": '&#39;'
     }[char]));
 }
+
+            
+async function fetchCustomers() {
+    try {
+        const response = await fetch(`${API_URL}/customers`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        customers = await response.json();
+        searchCustomers();
+    } catch (error) {
+        console.error('顧客データの取得に失敗:', error);
+        showErrorMessage('顧客データの取得に失敗しました');
+    }
+}
