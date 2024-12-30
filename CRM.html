@@ -27,3 +27,20 @@ async function fetchCustomers() {
         showErrorMessage('顧客データの取得に失敗しました');
     }
 }
+
+       // カスタマーデータのキャッシュ
+const customerCache = new Map();
+
+// 検索機能の最適化
+const searchCustomers = debounce(() => {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const filteredCustomers = customers.filter(customer => {
+        const nameMatch = customer.name.toLowerCase().includes(searchTerm);
+        const statusMatch = !statusFilter || customer.status === statusFilter;
+        return nameMatch && statusMatch;
+    });
+    
+    renderCustomers(filteredCustomers);
+}, 300);     
