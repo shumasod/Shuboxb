@@ -44,3 +44,12 @@ const searchCustomers = debounce(() => {
     
     renderCustomers(filteredCustomers);
 }, 300);     
+
+### APIのURLの定数化
+
+            const API_CONFIG = {
+    BASE_URL: process.env.API_URL || '/api',
+    ENDPOINTS: {
+        CUSTOMERS: '/customers'
+    }
+};
