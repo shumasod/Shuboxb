@@ -1,7 +1,6 @@
 
 
-# Firebase と App Engine の認証連携ガイド (2025年最新版)
-
+# Firebase と App Engine の認証連携ガイド 
 ## 概要
 このガイドでは、Firebase 認証システムと Google App Engine を安全に連携させるための最新のセットアップ方法を解説します。2025年現在の最新の機能やベストプラクティスを反映しています。
 
