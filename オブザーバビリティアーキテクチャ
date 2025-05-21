@@ -1,182 +1,324 @@
-# monitoring-infrastructure.yaml
-version: '1.0'
+package main
 
-# 全体的な監視プラットフォームの定義
-observability_platform:
-  name: enterprise-monitoring
-  version: '2.0'
-  environment: production
-  
-  # 監視ソリューションの構成
-  monitoring_solutions:
-    metrics_collector:
-      type: prometheus
-      version: '2.30.0'
-      retention: 15d
-      scrape_interval: 15s
-      
-    log_aggregator:
-      type: elasticsearch
-      version: '7.15.0'
-      retention: 30d
-      
-    tracing_system:
-      type: jaeger
-      version: '1.28.0'
-      retention: 7d
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strings"
+	"text/tabwriter"
 
-# コンピュートインフラストラクチャの監視
-compute_monitoring:
-  clusters:
-    kubernetes:
-      exporters:
-        - node_exporter
-        - kube_state_metrics
-      alerts:
-        cpu_threshold: 80
-        memory_threshold: 85
-        pod_restart_threshold: 5
-      metrics:
-        - cluster_health
-        - node_status
-        - pod_status
-        - deployment_status
+	"gopkg.in/yaml.v3"
+)
 
-# アプリケーション監視
-application_monitoring:
-  services:
-    - name: api_gateway
-      type: kong
-      metrics:
-        - request_rate
-        - error_rate
-        - latency
-      alerts:
-        error_rate_threshold: 1.0
-        latency_threshold_ms: 500
-        
-    - name: microservices
-      type: spring_boot
-      metrics:
-        - response_time
-        - throughput
-        - error_count
-      tracing:
-        enabled: true
-        sampling_rate: 0.1
+// MonitoringInfrastructure は監視インフラ全体の構造を表します
+type MonitoringInfrastructure struct {
+	Version               string                 `yaml:"version"`
+	ObservabilityPlatform ObservabilityPlatform  `yaml:"observability_platform"`
+	ComputeMonitoring     ComputeMonitoring      `yaml:"compute_monitoring"`
+	ApplicationMonitoring ApplicationMonitoring  `yaml:"application_monitoring"`
+	StorageMonitoring     StorageMonitoring      `yaml:"storage_monitoring"`
+	NetworkMonitoring     NetworkMonitoring      `yaml:"network_monitoring"`
+	SecurityMonitoring    SecurityMonitoring     `yaml:"security_monitoring"`
+	Alerting              Alerting               `yaml:"alerting"`
+	Dashboards            []Dashboard            `yaml:"dashboards"`
+	Backup                Backup                 `yaml:"backup"`
+	Performance           Performance            `yaml:"performance"`
+}
 
-# ストレージシステム監視
-storage_monitoring:
-  systems:
-    - name: primary_storage
-      type: postgresql
-      metrics:
-        - connection_count
-        - transaction_rate
-        - query_performance
-      alerts:
-        connection_threshold: 80
-        disk_usage_threshold: 85
-        
-    - name: cache_storage
-      type: redis
-      metrics:
-        - memory_usage
-        - hit_rate
-        - connected_clients
-      alerts:
-        memory_threshold: 90
-        connection_threshold: 1000
+// ObservabilityPlatform は観測プラットフォームの設定を表します
+type ObservabilityPlatform struct {
+	Name                string              `yaml:"name"`
+	Version             string              `yaml:"version"`
+	Environment         string              `yaml:"environment"`
+	MonitoringSolutions MonitoringSolutions `yaml:"monitoring_solutions"`
+}
 
-# ネットワーク監視
-network_monitoring:
-  components:
-    - name: load_balancers
-      metrics:
-        - throughput
-        - connection_count
-        - error_rate
-      alerts:
-        latency_threshold_ms: 100
-        error_rate_threshold: 2.0
-        
-    - name: firewalls
-      metrics:
-        - packet_drop_rate
-        - connection_states
-        - bandwidth_usage
-      alerts:
-        packet_drop_threshold: 1.0
-        bandwidth_threshold_mb: 800
+// MonitoringSolutions は監視ソリューションの構成を表します
+type MonitoringSolutions struct {
+	MetricsCollector MetricsCollector `yaml:"metrics_collector"`
+	LogAggregator    LogAggregator    `yaml:"log_aggregator"`
+	TracingSystem    TracingSystem    `yaml:"tracing_system"`
+}
 
-# セキュリティ監視
-security_monitoring:
-  components:
-    - name: intrusion_detection
-      type: ids
-      metrics:
-        - suspicious_activities
-        - blocked_attempts
-        - authentication_failures
-      alerts:
-        attempt_threshold: 5
-        
-    - name: audit_logging
-      retention: 90d
-      metrics:
-        - login_attempts
-        - permission_changes
-        - resource_access
+type MetricsCollector struct {
+	Type           string `yaml:"type"`
+	Version        string `yaml:"version"`
+	Retention      string `yaml:"retention"`
+	ScrapeInterval string `yaml:"scrape_interval"`
+}
 
-# アラート通知設定
-alerting:
-  providers:
-    - name: email
-      type: smtp
-      severity_levels:
-        - critical
-        - warning
-        
-    - name: slack
-      type: webhook
-      channels:
-        critical: '#monitoring-critical'
-        warning: '#monitoring-warnings'
-        
-    - name: pagerduty
-      type: api
-      severity_levels:
-        - critical
+type LogAggregator struct {
+	Type      string `yaml:"type"`
+	Version   string `yaml:"version"`
+	Retention string `yaml:"retention"`
+}
 
-# ダッシュボード設定
-dashboards:
-  - name: system_overview
-    type: grafana
-    refresh_interval: 1m
-    panels:
-      - name: infrastructure_health
-        type: status
-      - name: application_performance
-        type: graph
-      - name: error_rates
-        type: graph
+type TracingSystem struct {
+	Type      string `yaml:"type"`
+	Version   string `yaml:"version"`
+	Retention string `yaml:"retention"`
+}
 
-# バックアップと復旧
-backup:
-  metrics_data:
-    retention: 90d
-    schedule: '0 0 * * *'
-  logs:
-    retention: 180d
-    schedule: '0 1 * * *'
+// ComputeMonitoring はコンピュートインフラの監視設定を表します
+type ComputeMonitoring struct {
+	Clusters map[string]ClusterConfig `yaml:"clusters"`
+}
 
-# 性能とスケーリング設定
-performance:
-  metrics_ingestion_rate: 100000
-  log_ingestion_rate: 50000
-  max_concurrent_queries: 100
-  auto_scaling:
-    enabled: true
-    min_replicas: 2
-    max_replicas: 5
-    target_cpu_utilization: 70
+type ClusterConfig struct {
+	Exporters []string   `yaml:"exporters"`
+	Alerts    Thresholds `yaml:"alerts"`
+	Metrics   []string   `yaml:"metrics"`
+}
+
+type Thresholds struct {
+	CPUThreshold        int `yaml:"cpu_threshold"`
+	MemoryThreshold     int `yaml:"memory_threshold"`
+	PodRestartThreshold int `yaml:"pod_restart_threshold"`
+}
+
+// ApplicationMonitoring はアプリケーション監視設定を表します
+type ApplicationMonitoring struct {
+	Services []Service `yaml:"services"`
+}
+
+type Service struct {
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Metrics []string `yaml:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts,omitempty"`
+	Tracing map[string]interface{} `yaml:"tracing,omitempty"`
+}
+
+// StorageMonitoring はストレージ監視設定を表します
+type StorageMonitoring struct {
+	Systems []StorageSystem `yaml:"systems"`
+}
+
+type StorageSystem struct {
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Metrics []string `yaml:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts"`
+}
+
+// NetworkMonitoring はネットワーク監視設定を表します
+type NetworkMonitoring struct {
+	Components []NetworkComponent `yaml:"components"`
+}
+
+type NetworkComponent struct {
+	Name    string   `yaml:"name"`
+	Metrics []string `yaml:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts"`
+}
+
+// SecurityMonitoring はセキュリティ監視設定を表します
+type SecurityMonitoring struct {
+	Components []SecurityComponent `yaml:"components"`
+}
+
+type SecurityComponent struct {
+	Name       string   `yaml:"name"`
+	Type       string   `yaml:"type,omitempty"`
+	Retention  string   `yaml:"retention,omitempty"`
+	Metrics    []string `yaml:"metrics"`
+	Alerts     map[string]interface{} `yaml:"alerts,omitempty"`
+}
+
+// Alerting はアラート通知設定を表します
+type Alerting struct {
+	Providers []AlertProvider `yaml:"providers"`
+}
+
+type AlertProvider struct {
+	Name           string   `yaml:"name"`
+	Type           string   `yaml:"type"`
+	SeverityLevels []string `yaml:"severity_levels,omitempty"`
+	Channels       map[string]string `yaml:"channels,omitempty"`
+}
+
+// Dashboard はダッシュボード設定を表します
+type Dashboard struct {
+	Name            string  `yaml:"name"`
+	Type            string  `yaml:"type"`
+	RefreshInterval string  `yaml:"refresh_interval"`
+	Panels          []Panel `yaml:"panels"`
+}
+
+type Panel struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
+}
+
+// Backup はバックアップと復旧の設定を表します
+type Backup struct {
+	MetricsData BackupConfig `yaml:"metrics_data"`
+	Logs        BackupConfig `yaml:"logs"`
+}
+
+type BackupConfig struct {
+	Retention string `yaml:"retention"`
+	Schedule  string `yaml:"schedule"`
+}
+
+// Performance は性能とスケーリング設定を表します
+type Performance struct {
+	MetricsIngestionRate  int         `yaml:"metrics_ingestion_rate"`
+	LogIngestionRate      int         `yaml:"log_ingestion_rate"`
+	MaxConcurrentQueries  int         `yaml:"max_concurrent_queries"`
+	AutoScaling           AutoScaling `yaml:"auto_scaling"`
+}
+
+type AutoScaling struct {
+	Enabled              bool `yaml:"enabled"`
+	MinReplicas          int  `yaml:"min_replicas"`
+	MaxReplicas          int  `yaml:"max_replicas"`
+	TargetCPUUtilization int  `yaml:"target_cpu_utilization"`
+}
+
+func main() {
+	// YAMLファイルを読み込む
+	filename := "monitoring-infrastructure.yaml"
+	yamlData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("ファイルの読み込みに失敗しました: %v", err)
+	}
+
+	// YAMLをパースする
+	var infra MonitoringInfrastructure
+	err = yaml.Unmarshal(yamlData, &infra)
+	if err != nil {
+		log.Fatalf("YAMLのパースに失敗しました: %v", err)
+	}
+
+	// 結果を表示
+	fmt.Println("===== 監視インフラストラクチャ分析レポート =====")
+	fmt.Printf("バージョン: %s\n", infra.Version)
+	fmt.Printf("プラットフォーム: %s (バージョン %s, 環境: %s)\n", 
+		infra.ObservabilityPlatform.Name,
+		infra.ObservabilityPlatform.Version,
+		infra.ObservabilityPlatform.Environment)
+
+	// 監視ソリューションの詳細
+	fmt.Println("\n----- 監視ソリューション -----")
+	fmt.Printf("メトリクス収集: %s %s (保持期間: %s, スクレイプ間隔: %s)\n",
+		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Type,
+		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Version,
+		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Retention,
+		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.ScrapeInterval)
+	fmt.Printf("ログ集約: %s %s (保持期間: %s)\n",
+		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Type,
+		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Version,
+		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Retention)
+	fmt.Printf("トレーシング: %s %s (保持期間: %s)\n",
+		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Type,
+		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Version,
+		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Retention)
+
+	// コンピュート監視の詳細
+	fmt.Println("\n----- コンピュート監視 -----")
+	for name, cluster := range infra.ComputeMonitoring.Clusters {
+		fmt.Printf("クラスター: %s\n", name)
+		fmt.Printf("  エクスポーター: %s\n", strings.Join(cluster.Exporters, ", "))
+		fmt.Printf("  アラートしきい値: CPU %d%%, メモリ %d%%, Podの再起動 %d回\n",
+			cluster.Alerts.CPUThreshold,
+			cluster.Alerts.MemoryThreshold,
+			cluster.Alerts.PodRestartThreshold)
+		fmt.Printf("  監視メトリクス: %s\n", strings.Join(cluster.Metrics, ", "))
+	}
+
+	// アプリケーション監視の詳細
+	fmt.Println("\n----- アプリケーション監視 -----")
+	for _, service := range infra.ApplicationMonitoring.Services {
+		fmt.Printf("サービス: %s (%s)\n", service.Name, service.Type)
+		fmt.Printf("  メトリクス: %s\n", strings.Join(service.Metrics, ", "))
+		if len(service.Alerts) > 0 {
+			fmt.Println("  アラート設定:")
+			for k, v := range service.Alerts {
+				fmt.Printf("    %s: %v\n", k, v)
+			}
+		}
+		if len(service.Tracing) > 0 {
+			fmt.Println("  トレーシング設定:")
+			for k, v := range service.Tracing {
+				fmt.Printf("    %s: %v\n", k, v)
+			}
+		}
+	}
+
+	// パフォーマンス設定の表示
+	fmt.Println("\n----- パフォーマンスとスケーリング -----")
+	fmt.Printf("メトリクス取り込みレート: %d/秒\n", infra.Performance.MetricsIngestionRate)
+	fmt.Printf("ログ取り込みレート: %d/秒\n", infra.Performance.LogIngestionRate)
+	fmt.Printf("最大同時クエリ数: %d\n", infra.Performance.MaxConcurrentQueries)
+	fmt.Printf("自動スケーリング: %v (レプリカ: %d-%d, CPU目標使用率: %d%%)\n",
+		infra.Performance.AutoScaling.Enabled,
+		infra.Performance.AutoScaling.MinReplicas,
+		infra.Performance.AutoScaling.MaxReplicas,
+		infra.Performance.AutoScaling.TargetCPUUtilization)
+
+	// アラート通知チャネルのサマリーをテーブル形式で表示
+	fmt.Println("\n----- アラート通知チャネル -----")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "プロバイダー\tタイプ\t通知レベル/チャネル")
+	fmt.Fprintln(w, "----------\t----\t----------------")
+	for _, provider := range infra.Alerting.Providers {
+		var details string
+		if len(provider.SeverityLevels) > 0 {
+			details = strings.Join(provider.SeverityLevels, ", ")
+		} else if len(provider.Channels) > 0 {
+			var channels []string
+			for level, channel := range provider.Channels {
+				channels = append(channels, fmt.Sprintf("%s: %s", level, channel))
+			}
+			details = strings.Join(channels, ", ")
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\n", provider.Name, provider.Type, details)
+	}
+	w.Flush()
+
+	// 健全性チェックの実行
+	fmt.Println("\n----- システム健全性チェック -----")
+	runHealthChecks(&infra)
+}
+
+// runHealthChecks は監視設定の健全性をチェックします
+func runHealthChecks(infra *MonitoringInfrastructure) {
+	// Prometheusのスクレイプ間隔チェック
+	scrapeInterval := infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.ScrapeInterval
+	if scrapeInterval == "15s" {
+		fmt.Println("✓ Prometheusのスクレイプ間隔は推奨値(15秒)に設定されています")
+	} else {
+		fmt.Printf("⚠ Prometheusのスクレイプ間隔(%s)は推奨値(15秒)と異なります\n", scrapeInterval)
+	}
+
+	// CPUしきい値チェック
+	for name, cluster := range infra.ComputeMonitoring.Clusters {
+		if cluster.Alerts.CPUThreshold > 85 {
+			fmt.Printf("⚠ クラスター'%s'のCPUしきい値(%d%%)が高すぎます。80%%以下を推奨します\n", 
+				name, cluster.Alerts.CPUThreshold)
+		} else {
+			fmt.Printf("✓ クラスター'%s'のCPUしきい値は適切です\n", name)
+		}
+	}
+
+	// バックアップ保持期間チェック
+	metricsRetention := infra.Backup.MetricsData.Retention
+	if metricsRetention == "90d" {
+		fmt.Println("✓ メトリクスデータのバックアップ保持期間は適切です")
+	} else {
+		fmt.Printf("ℹ メトリクスデータのバックアップ保持期間(%s)は標準的な90日と異なります\n", metricsRetention)
+	}
+
+	// 自動スケーリングチェック
+	if infra.Performance.AutoScaling.Enabled {
+		fmt.Println("✓ 自動スケーリングが有効になっています")
+		if infra.Performance.AutoScaling.MaxReplicas < 3 {
+			fmt.Printf("⚠ 最大レプリカ数(%d)が少なすぎる可能性があります。高可用性のために3以上を推奨します\n",
+				infra.Performance.AutoScaling.MaxReplicas)
+		}
+	} else {
+		fmt.Println("⚠ 自動スケーリングが無効になっています。高負荷時の可用性を確保するために有効化を検討してください")
+	}
+}
