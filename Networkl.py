@@ -11,7 +11,7 @@ class NetworkStatus:
     def is_packet_lost(self):
         return random.random() < self.loss_rate
 
-# ルーティングテーブルを表すクラス
+
 class RoutingTable:
     def __init__(self):
         self.routes = {}
