@@ -4,7 +4,373 @@ const headers = {
     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
 };
 
-// XSS対策
+// XSS対策/**
+ * カスタマー管理システム
+ * セキュリティ、パフォーマンス、保守性を考慮した実装
+ */
+
+// 設定の定数化と環境変数の適切な処理
+const API_CONFIG = {
+    BASE_URL: (() => {
+        const url = process.env.API_URL || '/api';
+        // URLの基本的な検証
+        if (!url.match(/^https?:\/\//) && !url.startsWith('/')) {
+            throw new Error('Invalid API URL format');
+        }
+        return url;
+    })(),
+    ENDPOINTS: {
+        CUSTOMERS: '/customers'
+    },
+    TIMEOUT: 10000, // 10秒
+    RETRY_ATTEMPTS: 3
+};
+
+// アプリケーション状態の管理
+class CustomerManager {
+    constructor() {
+        this.customers = [];
+        this.customerCache = new Map();
+        this.abortController = null;
+        this.isLoading = false;
+        this.init();
+    }
+
+    /**
+     * 初期化処理
+     */
+    init() {
+        this.bindEvents();
+        this.fetchCustomers();
+    }
+
+    /**
+     * イベントリスナーの設定
+     */
+    bindEvents() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', this.debouncedSearch.bind(this));
+        }
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', this.searchCustomers.bind(this));
+        }
+    }
+
+    /**
+     * CSRFトークンの安全な取得
+     * @returns {string|null} CSRFトークン
+     */
+    getCsrfToken() {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (!metaTag) {
+            console.warn('CSRF token not found');
+            return null;
+        }
+        return metaTag.getAttribute('content');
+    }
+
+    /**
+     * HTTPヘッダーの生成
+     * @returns {Object} リクエストヘッダー
+     */
+    getHeaders() {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        
+        const csrfToken = this.getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        
+        return headers;
+    }
+
+    /**
+     * XSS対策のHTMLエスケープ
+     * @param {string} str - エスケープする文字列
+     * @returns {string} エスケープされた文字列
+     */
+    escapeHtml(str) {
+        if (typeof str !== 'string') {
+            return String(str);
+        }
+        
+        const escapeMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;'
+        };
+        
+        return str.replace(/[&<>"'/]/g, char => escapeMap[char]);
+    }
+
+    /**
+     * デバウンス機能付き検索
+     */
+    debouncedSearch = this.debounce(() => {
+        this.searchCustomers();
+    }, 300);
+
+    /**
+     * デバウンス関数
+     * @param {Function} func - 実行する関数
+     * @param {number} delay - 遅延時間（ミリ秒）
+     * @returns {Function} デバウンスされた関数
+     */
+    debounce(func, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    /**
+     * リトライ機能付きFetch
+     * @param {string} url - リクエストURL
+     * @param {Object} options - Fetchオプション
+     * @param {number} retryCount - リトライ回数
+     * @returns {Promise<Response>} レスポンス
+     */
+    async fetchWithRetry(url, options = {}, retryCount = 0) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+            
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+            }
+            
+            return response;
+        } catch (error) {
+            if (retryCount < API_CONFIG.RETRY_ATTEMPTS && !error.name === 'AbortError') {
+                console.warn(`Request failed, retrying... (${retryCount + 1}/${API_CONFIG.RETRY_ATTEMPTS})`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                return this.fetchWithRetry(url, options, retryCount + 1);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * 顧客データの取得
+     */
+    async fetchCustomers() {
+        // 既に読み込み中の場合は中断
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+        
+        this.abortController = new AbortController();
+        this.isLoading = true;
+        this.showLoadingState(true);
+        
+        try {
+            const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CUSTOMERS}`;
+            const response = await this.fetchWithRetry(url, {
+                method: 'GET',
+                headers: this.getHeaders(),
+                signal: this.abortController.signal
+            });
+            
+            const data = await response.json();
+            
+            // データの基本的な検証
+            if (!Array.isArray(data)) {
+                throw new Error('Invalid data format: expected array');
+            }
+            
+            this.customers = data.map(customer => this.sanitizeCustomerData(customer));
+            this.updateCache();
+            this.searchCustomers();
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Request was aborted');
+                return;
+            }
+            
+            console.error('顧客データの取得に失敗:', error);
+            this.showErrorMessage('顧客データの取得に失敗しました。しばらくしてからもう一度お試しください。');
+        } finally {
+            this.isLoading = false;
+            this.showLoadingState(false);
+            this.abortController = null;
+        }
+    }
+
+    /**
+     * 顧客データのサニタイズ
+     * @param {Object} customer - 顧客データ
+     * @returns {Object} サニタイズされた顧客データ
+     */
+    sanitizeCustomerData(customer) {
+        return {
+            id: customer.id,
+            name: this.escapeHtml(customer.name || ''),
+            email: this.escapeHtml(customer.email || ''),
+            status: customer.status || 'unknown',
+            createdAt: customer.createdAt || new Date().toISOString()
+        };
+    }
+
+    /**
+     * キャッシュの更新
+     */
+    updateCache() {
+        this.customerCache.clear();
+        this.customers.forEach(customer => {
+            this.customerCache.set(customer.id, customer);
+        });
+    }
+
+    /**
+     * 顧客検索機能
+     */
+    searchCustomers() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        if (!searchInput || !statusFilter) {
+            console.error('Required DOM elements not found');
+            return;
+        }
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusFilter = statusFilter.value;
+        
+        const filteredCustomers = this.customers.filter(customer => {
+            const nameMatch = searchTerm === '' || 
+                customer.name.toLowerCase().includes(searchTerm);
+            const statusMatch = statusFilter === '' || 
+                customer.status === statusFilter;
+            return nameMatch && statusMatch;
+        });
+        
+        this.renderCustomers(filteredCustomers);
+    }
+
+    /**
+     * 顧客リストの描画
+     * @param {Array} customers - 描画する顧客データ
+     */
+    renderCustomers(customers) {
+        const container = document.getElementById('customerList');
+        if (!container) {
+            console.error('Customer list container not found');
+            return;
+        }
+        
+        if (customers.length === 0) {
+            container.innerHTML = '<p class="no-results">該当する顧客が見つかりませんでした。</p>';
+            return;
+        }
+        
+        // DocumentFragment を使用してパフォーマンスを向上
+        const fragment = document.createDocumentFragment();
+        
+        customers.forEach(customer => {
+            const element = this.createCustomerElement(customer);
+            fragment.appendChild(element);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(fragment);
+    }
+
+    /**
+     * 顧客要素の作成
+     * @param {Object} customer - 顧客データ
+     * @returns {HTMLElement} 顧客要素
+     */
+    createCustomerElement(customer) {
+        const div = document.createElement('div');
+        div.className = 'customer-item';
+        div.innerHTML = `
+            <h3>${customer.name}</h3>
+            <p>メール: ${customer.email}</p>
+            <p>ステータス: <span class="status status-${customer.status}">${customer.status}</span></p>
+        `;
+        return div;
+    }
+
+    /**
+     * エラーメッセージの表示
+     * @param {string} message - エラーメッセージ
+     */
+    showErrorMessage(message) {
+        const errorContainer = document.getElementById('errorContainer') || this.createErrorContainer();
+        errorContainer.textContent = message;
+        errorContainer.style.display = 'block';
+        
+        // 5秒後に自動的に非表示
+        setTimeout(() => {
+            errorContainer.style.display = 'none';
+        }, 5000);
+    }
+
+    /**
+     * エラーコンテナの作成
+     * @returns {HTMLElement} エラーコンテナ
+     */
+    createErrorContainer() {
+        const container = document.createElement('div');
+        container.id = 'errorContainer';
+        container.className = 'error-message';
+        container.style.display = 'none';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    /**
+     * ローディング状態の表示
+     * @param {boolean} isLoading - ローディング状態
+     */
+    showLoadingState(isLoading) {
+        const loadingElement = document.getElementById('loadingIndicator');
+        if (loadingElement) {
+            loadingElement.style.display = isLoading ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * リソースのクリーンアップ
+     */
+    destroy() {
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+        this.customerCache.clear();
+    }
+}
+
+// アプリケーションの初期化
+document.addEventListener('DOMContentLoaded', () => {
+    window.customerManager = new CustomerManager();
+});
+
+// ページ離脱時のクリーンアップ
+window.addEventListener('beforeunload', () => {
+    if (window.customerManager) {
+        window.customerManager.destroy();
+    }
+});
 function escapeHtml(str) {
     return str.replace(/[&<>"']/g, char => ({
         '&': '&amp;',
