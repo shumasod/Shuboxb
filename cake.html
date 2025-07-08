@@ -3,21 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ケーキデザイン</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <meta name="description" content="あなただけの特別なケーキを作りましょう。しっとりスポンジケーキと新鮮なフルーツで作る素敵なケーキデザインのアイデアとレシピを提供します。">
+    <meta name="keywords" content="ケーキデザイン, 手作りケーキ, レシピ, スポンジケーキ, フルーツケーキ">
+    <meta name="author" content="ケーキデザインスタジオ">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://example.com/cake-design">
+    <meta property="og:title" content="素敵なケーキデザイン - あなただけの特別なケーキを作りましょう">
+    <meta property="og:description" content="しっとりスポンジケーキと新鮮なフルーツで作る素敵なケーキデザインのアイデアとレシピを提供します。">
+    <meta property="og:image" content="https://example.com/cake_image.jpeg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://example.com/cake-design">
+    <meta property="twitter:title" content="素敵なケーキデザイン - あなただけの特別なケーキを作りましょう">
+    <meta property="twitter:description" content="しっとりスポンジケーキと新鮮なフルーツで作る素敵なケーキデザインのアイデアとレシピを提供します。">
+    <meta property="twitter:image" content="https://example.com/cake_image.jpeg">
+    
+    <title>素敵なケーキデザイン - あなただけの特別なケーキを作りましょう</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" as="style">
+    <link rel="preload" href="cake_image.jpeg" as="image">
+    
+    <!-- Tailwind CSS with SRI -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet" 
+          integrity="sha384-..." crossorigin="anonymous">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#db2777">
+    
+    <!-- CSP Header (should be implemented server-side) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com;">
+    
+    <style>
+        /* Critical CSS for above-the-fold content */
+        .font-noto { font-family: 'Noto Sans JP', sans-serif; }
+        .hero-gradient { background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%); }
+        .card-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .btn-gradient { background: linear-gradient(45deg, #db2777, #e11d48); }
+        .btn-gradient:hover { background: linear-gradient(45deg, #be185d, #dc2626); }
+        
+        /* Loading animation */
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #db2777;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Improved accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus styles */
+        .focus-ring:focus {
+            outline: 2px solid #db2777;
+            outline-offset: 2px;
+        }
+        
+        /* Image placeholder */
+        .image-placeholder {
+            background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+    </style>
 </head>
-<body class="bg-pink-100">
-    <div class="container mx-auto py-10">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-pink-800">素敵なケーキデザイン</h1>
-            <p class="text-lg text-pink-600">あなただけの特別なケーキを作りましょう！</p>
-        </div>
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-            <img src="cake_image.jpeg" alt="ケーキ画像" class="w-full h-auto rounded-lg mb-6">
-            <h2 class="text-2xl font-bold text-pink-700">デザインのアイデア</h2>
-            <p class="text-pink-600 mt-2">このケーキは、しっとりとしたスポンジケーキの上に、たっぷりの生クリームと新鮮なフルーツをあしらっています。チョコレートとフルーツのコンビネーションが絶妙です。</p>
-            <button class="mt-4 bg-pink-600 text-white py-2 px-4 rounded-lg">作り方を見る</button>
-        </div>
+<body class="hero-gradient font-noto">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-pink-600 text-white px-4 py-2 rounded-md z-50">
+        メインコンテンツにスキップ
+    </a>
+    
+    <!-- Loading indicator -->
+    <div id="loading-indicator" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50 hidden" role="status" aria-label="読み込み中">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <span class="sr-only">読み込み中...</span>
     </div>
+    
+    <!-- Main container -->
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <!-- Header section -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-pink-800 mb-4 leading-tight">
+                素敵なケーキデザイン
+            </h1>
+            <p class="text-lg md:text-xl text-pink-600 max-w-2xl mx-auto leading-relaxed">
+                あなただけの特別なケーキを作りましょう！心を込めて作る手作りケーキで、大切な人との思い出を彩ります。
+            </p>
+        </header>
+        
+        <!-- Main content -->
+        <main id="main-content">
+            <article class="bg-white p-6 md:p-8 rounded-xl shadow-lg max-w-2xl mx-auto card-hover">
+                <!-- Error message container -->
+                <div id="error-message" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
+                    <p class="font-bold">エラー</p>
+                    <p id="error-text">画像の読み込みに失敗しました。</p>
+                </div>
+                
+                <!-- Image section -->
+                <figure class="mb-6">
+                    <div class="relative">
+                        <img id="cake-image" 
+                             src="cake_image.jpeg" 
+                             alt="しっとりスポンジケーキの上に生クリームと新鮮なフルーツ（いちご、ブルーベリー、キウイ）をあしらった美しいケーキ" 
+                             class="w-full h-64 md:h-80 object-cover rounded-lg shadow-md"
+                             loading="lazy"
+                             onerror="handleImageError(this)"
+                             onload="handleImageLoad(this)">
+                        
+                        <!-- Image placeholder -->
+                        <div id="image-placeholder" class="hidden w-full h-64 md:h-80 rounded-lg shadow-md image-placeholder">
+                            <div class="text-center">
+                                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <p class="text-sm">画像を読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <figcaption class="mt-2 text-sm text-gray-600 text-center">
+                        美しく彩られたフルーツケーキの例
+                    </figcaption>
+                </figure>
+                
+                <!-- Content section -->
+                <div class="space-y-4">
+                    <h2 class="text-2xl md:text-3xl font-bold text-pink-700">
+                        デザインのアイデア
+                    </h2>
+                    
+                    <div class="prose prose-pink max-w-none">
+                        <p class="text-pink-600 leading-relaxed">
+                            このケーキは、しっとりとしたスポンジケーキの上に、たっぷりの生クリームと新鮮なフルーツをあしらっています。
+                            チョコレートとフルーツのコンビネーションが絶妙で、見た目にも美しく、味わいも格別です。
+                        </p>
+                        
+                        <div class="mt-4 p-4 bg-pink-50 rounded-lg">
+                            <h3 class="font-semibold text-pink-700 mb-2">ポイント</h3>
+                            <ul class="space-y-1 text-pink-600">
+                                <li>• 季節の新鮮なフルーツを使用</li>
+                                <li>• 生クリームは泡立て過ぎに注意</li>
+                                <li>• 色のバランスを考えた配置</li>
+                                <li>• 温度管理が美味しさの秘訣</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Action buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                        <button id="recipe-btn" 
+                                class="flex-1 btn-gradient text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 focus-ring"
+                                onclick="showRecipe()"
+                                aria-describedby="recipe-desc">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                                作り方を見る
+                            </span>
+                        </button>
+                        
+                        <button id="gallery-btn" 
+                                class="flex-1 bg-white text-pink-600 font-semibold py-3 px-6 rounded-lg shadow-md border-2 border-pink-600 hover:bg-pink-50 transition-colors duration-300 focus-ring"
+                                onclick="showGallery()"
+                                aria-describedby="gallery-desc">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                ギャラリーを見る
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <!-- Hidden descriptions for accessibility -->
+                    <div class="sr-only">
+                        <div id="recipe-desc">詳細な作り方とレシピを表示します</div>
+                        <div id="gallery-desc">他のケーキデザインの例を表示します</div>
+                    </div>
+                </div>
+                
+                <!-- Recipe section (initially hidden) -->
+                <div id="recipe-section" class="hidden mt-8 p-6 bg-gray-50 rounded-lg">
+                    <h3 class="text-xl font-bold text-pink-700 mb-4">基本のフルーツケーキレシピ</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-pink-600 mb-2">材料（6号サイズ）</h4>
+                            <ul class="space-y-1 text-sm text-gray-700">
+                                <li>• 卵 3個</li>
+                                <li>• 砂糖 90g</li>
+                                <li>• 薄力粉 90g</li>
+                                <li>• 生クリーム 200ml</li>
+                                <li>• お好みのフルーツ</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-pink-600 mb-2">手順</h4>
+                            <ol class="space-y-1 text-sm text-gray-700">
+                                <li>1. スポンジケーキを焼く</li>
+                                <li>2. 生クリームを泡立てる</li>
+                                <li>3. ケーキに生クリームを塗る</li>
+                                <li>4. フルーツを美しく飾る</li>
+                                <li>5. 冷蔵庫で冷やして完成</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-pink-600">
+            <p>&copy; 2024 ケーキデザインスタジオ. すべての権利を保有します。</p>
+        </footer>
+    </div>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": "素敵なフルーツケーキ",
+        "description": "しっとりスポンジケーキと新鮮なフルーツで作る美しいケーキ",
+        "image": "https://example.com/cake_image.jpeg",
+        "author": {
+            "@type": "Organization",
+            "name": "ケーキデザインスタジオ"
+        },
+        "recipeYield": "6人分",
+        "recipeIngredient": [
+            "卵 3個",
+            "砂糖 90g",
+            "薄力粉 90g",
+            "生クリーム 200ml",
+            "お好みのフルーツ"
+        ],
+        "recipeInstructions": [
+            "スポンジケーキを焼く",
+            "生クリームを泡立てる",
+            "ケーキに生クリームを塗る",
+            "フルーツを美しく飾る",
+            "冷蔵庫で冷やして完成"
+        ]
+    }
+    </script>
+    
+    <script>
+        // Image error handling
+        function handleImageError(img) {
+            const placeholder = document.getElementById('image-placeholder');
+            const errorMessage = document.getElementById('error-message');
+            
+            img.style.display = 'none';
+            placeholder.classList.remove('hidden');
+            errorMessage.classList.remove('hidden');
+            
+            // Update placeholder content
+            placeholder.innerHTML = `
+                <div class="text-center">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm">画像を読み込めませんでした</p>
+                </div>
+            `;
+        }
+        
+        // Image load success
+        function handleImageLoad(img) {
+            const placeholder = document.getElementById('image-placeholder');
+            placeholder.classList.add('hidden');
+            img.style.display = 'block';
+        }
+        
+        // Show recipe
+        function showRecipe() {
+            const section = document.getElementById('recipe-section');
+            const button = document.getElementById('recipe-btn');
+            
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                button.innerHTML = `
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                        </svg>
+                        レシピを閉じる
+                    </span>
+                `;
+                section.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                section.classList.add('hidden');
+                button.innerHTML = `
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        作り方を見る
+                    </span>
+                `;
+            }
+        }
+        
+        // Show gallery (placeholder function)
+        function showGallery() {
+            alert('ギャラリー機能は準備中です。近日公開予定です！');
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const section = document.getElementById('recipe-section');
+                if (!section.classList.contains('hidden')) {
+                    showRecipe();
+                }
+            }
+        });
+        
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            // Hide loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            loadingIndicator.classList.add('hidden');
+            
+            // Log performance metrics
+            if ('performance' in window) {
+                const navigationStart = performance.timing.navigationStart;
+                const loadEventEnd = performance.timing.loadEventEnd;
+                const loadTime = loadEventEnd - navigationStart;
+                console.log('Page load time:', loadTime + 'ms');
+            }
+        });
+    </script>
 </body>
 </html>
