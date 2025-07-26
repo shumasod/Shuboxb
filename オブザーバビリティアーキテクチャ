@@ -1,222 +1,351 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 // MonitoringInfrastructure は監視インフラ全体の構造を表します
 type MonitoringInfrastructure struct {
-	Version               string                 `yaml:"version"`
-	ObservabilityPlatform ObservabilityPlatform  `yaml:"observability_platform"`
-	ComputeMonitoring     ComputeMonitoring      `yaml:"compute_monitoring"`
-	ApplicationMonitoring ApplicationMonitoring  `yaml:"application_monitoring"`
-	StorageMonitoring     StorageMonitoring      `yaml:"storage_monitoring"`
-	NetworkMonitoring     NetworkMonitoring      `yaml:"network_monitoring"`
-	SecurityMonitoring    SecurityMonitoring     `yaml:"security_monitoring"`
-	Alerting              Alerting               `yaml:"alerting"`
-	Dashboards            []Dashboard            `yaml:"dashboards"`
-	Backup                Backup                 `yaml:"backup"`
-	Performance           Performance            `yaml:"performance"`
+	Version               string                 `yaml:"version" json:"version"`
+	ObservabilityPlatform ObservabilityPlatform  `yaml:"observability_platform" json:"observability_platform"`
+	ComputeMonitoring     ComputeMonitoring      `yaml:"compute_monitoring" json:"compute_monitoring"`
+	ApplicationMonitoring ApplicationMonitoring  `yaml:"application_monitoring" json:"application_monitoring"`
+	StorageMonitoring     StorageMonitoring      `yaml:"storage_monitoring" json:"storage_monitoring"`
+	NetworkMonitoring     NetworkMonitoring      `yaml:"network_monitoring" json:"network_monitoring"`
+	SecurityMonitoring    SecurityMonitoring     `yaml:"security_monitoring" json:"security_monitoring"`
+	Alerting              Alerting               `yaml:"alerting" json:"alerting"`
+	Dashboards            []Dashboard            `yaml:"dashboards" json:"dashboards"`
+	Backup                Backup                 `yaml:"backup" json:"backup"`
+	Performance           Performance            `yaml:"performance" json:"performance"`
 }
 
 // ObservabilityPlatform は観測プラットフォームの設定を表します
 type ObservabilityPlatform struct {
-	Name                string              `yaml:"name"`
-	Version             string              `yaml:"version"`
-	Environment         string              `yaml:"environment"`
-	MonitoringSolutions MonitoringSolutions `yaml:"monitoring_solutions"`
+	Name                string              `yaml:"name" json:"name"`
+	Version             string              `yaml:"version" json:"version"`
+	Environment         string              `yaml:"environment" json:"environment"`
+	MonitoringSolutions MonitoringSolutions `yaml:"monitoring_solutions" json:"monitoring_solutions"`
 }
 
 // MonitoringSolutions は監視ソリューションの構成を表します
 type MonitoringSolutions struct {
-	MetricsCollector MetricsCollector `yaml:"metrics_collector"`
-	LogAggregator    LogAggregator    `yaml:"log_aggregator"`
-	TracingSystem    TracingSystem    `yaml:"tracing_system"`
+	MetricsCollector MetricsCollector `yaml:"metrics_collector" json:"metrics_collector"`
+	LogAggregator    LogAggregator    `yaml:"log_aggregator" json:"log_aggregator"`
+	TracingSystem    TracingSystem    `yaml:"tracing_system" json:"tracing_system"`
 }
 
 type MetricsCollector struct {
-	Type           string `yaml:"type"`
-	Version        string `yaml:"version"`
-	Retention      string `yaml:"retention"`
-	ScrapeInterval string `yaml:"scrape_interval"`
+	Type           string `yaml:"type" json:"type"`
+	Version        string `yaml:"version" json:"version"`
+	Retention      string `yaml:"retention" json:"retention"`
+	ScrapeInterval string `yaml:"scrape_interval" json:"scrape_interval"`
 }
 
 type LogAggregator struct {
-	Type      string `yaml:"type"`
-	Version   string `yaml:"version"`
-	Retention string `yaml:"retention"`
+	Type      string `yaml:"type" json:"type"`
+	Version   string `yaml:"version" json:"version"`
+	Retention string `yaml:"retention" json:"retention"`
 }
 
 type TracingSystem struct {
-	Type      string `yaml:"type"`
-	Version   string `yaml:"version"`
-	Retention string `yaml:"retention"`
+	Type      string `yaml:"type" json:"type"`
+	Version   string `yaml:"version" json:"version"`
+	Retention string `yaml:"retention" json:"retention"`
 }
 
 // ComputeMonitoring はコンピュートインフラの監視設定を表します
 type ComputeMonitoring struct {
-	Clusters map[string]ClusterConfig `yaml:"clusters"`
+	Clusters map[string]ClusterConfig `yaml:"clusters" json:"clusters"`
 }
 
 type ClusterConfig struct {
-	Exporters []string   `yaml:"exporters"`
-	Alerts    Thresholds `yaml:"alerts"`
-	Metrics   []string   `yaml:"metrics"`
+	Exporters []string   `yaml:"exporters" json:"exporters"`
+	Alerts    Thresholds `yaml:"alerts" json:"alerts"`
+	Metrics   []string   `yaml:"metrics" json:"metrics"`
 }
 
 type Thresholds struct {
-	CPUThreshold        int `yaml:"cpu_threshold"`
-	MemoryThreshold     int `yaml:"memory_threshold"`
-	PodRestartThreshold int `yaml:"pod_restart_threshold"`
+	CPUThreshold        int `yaml:"cpu_threshold" json:"cpu_threshold"`
+	MemoryThreshold     int `yaml:"memory_threshold" json:"memory_threshold"`
+	PodRestartThreshold int `yaml:"pod_restart_threshold" json:"pod_restart_threshold"`
 }
 
 // ApplicationMonitoring はアプリケーション監視設定を表します
 type ApplicationMonitoring struct {
-	Services []Service `yaml:"services"`
+	Services []Service `yaml:"services" json:"services"`
 }
 
 type Service struct {
-	Name    string   `yaml:"name"`
-	Type    string   `yaml:"type"`
-	Metrics []string `yaml:"metrics"`
-	Alerts  map[string]interface{} `yaml:"alerts,omitempty"`
-	Tracing map[string]interface{} `yaml:"tracing,omitempty"`
+	Name    string                 `yaml:"name" json:"name"`
+	Type    string                 `yaml:"type" json:"type"`
+	Metrics []string               `yaml:"metrics" json:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts,omitempty" json:"alerts,omitempty"`
+	Tracing map[string]interface{} `yaml:"tracing,omitempty" json:"tracing,omitempty"`
 }
 
 // StorageMonitoring はストレージ監視設定を表します
 type StorageMonitoring struct {
-	Systems []StorageSystem `yaml:"systems"`
+	Systems []StorageSystem `yaml:"systems" json:"systems"`
 }
 
 type StorageSystem struct {
-	Name    string   `yaml:"name"`
-	Type    string   `yaml:"type"`
-	Metrics []string `yaml:"metrics"`
-	Alerts  map[string]interface{} `yaml:"alerts"`
+	Name    string                 `yaml:"name" json:"name"`
+	Type    string                 `yaml:"type" json:"type"`
+	Metrics []string               `yaml:"metrics" json:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts" json:"alerts"`
 }
 
 // NetworkMonitoring はネットワーク監視設定を表します
 type NetworkMonitoring struct {
-	Components []NetworkComponent `yaml:"components"`
+	Components []NetworkComponent `yaml:"components" json:"components"`
 }
 
 type NetworkComponent struct {
-	Name    string   `yaml:"name"`
-	Metrics []string `yaml:"metrics"`
-	Alerts  map[string]interface{} `yaml:"alerts"`
+	Name    string                 `yaml:"name" json:"name"`
+	Metrics []string               `yaml:"metrics" json:"metrics"`
+	Alerts  map[string]interface{} `yaml:"alerts" json:"alerts"`
 }
 
 // SecurityMonitoring はセキュリティ監視設定を表します
 type SecurityMonitoring struct {
-	Components []SecurityComponent `yaml:"components"`
+	Components []SecurityComponent `yaml:"components" json:"components"`
 }
 
 type SecurityComponent struct {
-	Name       string   `yaml:"name"`
-	Type       string   `yaml:"type,omitempty"`
-	Retention  string   `yaml:"retention,omitempty"`
-	Metrics    []string `yaml:"metrics"`
-	Alerts     map[string]interface{} `yaml:"alerts,omitempty"`
+	Name      string                 `yaml:"name" json:"name"`
+	Type      string                 `yaml:"type,omitempty" json:"type,omitempty"`
+	Retention string                 `yaml:"retention,omitempty" json:"retention,omitempty"`
+	Metrics   []string               `yaml:"metrics" json:"metrics"`
+	Alerts    map[string]interface{} `yaml:"alerts,omitempty" json:"alerts,omitempty"`
 }
 
 // Alerting はアラート通知設定を表します
 type Alerting struct {
-	Providers []AlertProvider `yaml:"providers"`
+	Providers []AlertProvider `yaml:"providers" json:"providers"`
 }
 
 type AlertProvider struct {
-	Name           string   `yaml:"name"`
-	Type           string   `yaml:"type"`
-	SeverityLevels []string `yaml:"severity_levels,omitempty"`
-	Channels       map[string]string `yaml:"channels,omitempty"`
+	Name           string            `yaml:"name" json:"name"`
+	Type           string            `yaml:"type" json:"type"`
+	SeverityLevels []string          `yaml:"severity_levels,omitempty" json:"severity_levels,omitempty"`
+	Channels       map[string]string `yaml:"channels,omitempty" json:"channels,omitempty"`
 }
 
 // Dashboard はダッシュボード設定を表します
 type Dashboard struct {
-	Name            string  `yaml:"name"`
-	Type            string  `yaml:"type"`
-	RefreshInterval string  `yaml:"refresh_interval"`
-	Panels          []Panel `yaml:"panels"`
+	Name            string  `yaml:"name" json:"name"`
+	Type            string  `yaml:"type" json:"type"`
+	RefreshInterval string  `yaml:"refresh_interval" json:"refresh_interval"`
+	Panels          []Panel `yaml:"panels" json:"panels"`
 }
 
 type Panel struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type"`
+	Name string `yaml:"name" json:"name"`
+	Type string `yaml:"type" json:"type"`
 }
 
 // Backup はバックアップと復旧の設定を表します
 type Backup struct {
-	MetricsData BackupConfig `yaml:"metrics_data"`
-	Logs        BackupConfig `yaml:"logs"`
+	MetricsData BackupConfig `yaml:"metrics_data" json:"metrics_data"`
+	Logs        BackupConfig `yaml:"logs" json:"logs"`
 }
 
 type BackupConfig struct {
-	Retention string `yaml:"retention"`
-	Schedule  string `yaml:"schedule"`
+	Retention string `yaml:"retention" json:"retention"`
+	Schedule  string `yaml:"schedule" json:"schedule"`
 }
 
 // Performance は性能とスケーリング設定を表します
 type Performance struct {
-	MetricsIngestionRate  int         `yaml:"metrics_ingestion_rate"`
-	LogIngestionRate      int         `yaml:"log_ingestion_rate"`
-	MaxConcurrentQueries  int         `yaml:"max_concurrent_queries"`
-	AutoScaling           AutoScaling `yaml:"auto_scaling"`
+	MetricsIngestionRate int         `yaml:"metrics_ingestion_rate" json:"metrics_ingestion_rate"`
+	LogIngestionRate     int         `yaml:"log_ingestion_rate" json:"log_ingestion_rate"`
+	MaxConcurrentQueries int         `yaml:"max_concurrent_queries" json:"max_concurrent_queries"`
+	AutoScaling          AutoScaling `yaml:"auto_scaling" json:"auto_scaling"`
 }
 
 type AutoScaling struct {
-	Enabled              bool `yaml:"enabled"`
-	MinReplicas          int  `yaml:"min_replicas"`
-	MaxReplicas          int  `yaml:"max_replicas"`
-	TargetCPUUtilization int  `yaml:"target_cpu_utilization"`
+	Enabled              bool `yaml:"enabled" json:"enabled"`
+	MinReplicas          int  `yaml:"min_replicas" json:"min_replicas"`
+	MaxReplicas          int  `yaml:"max_replicas" json:"max_replicas"`
+	TargetCPUUtilization int  `yaml:"target_cpu_utilization" json:"target_cpu_utilization"`
+}
+
+// HealthCheckResult は健全性チェック結果を表します
+type HealthCheckResult struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Level   string `json:"level"`
+}
+
+// Config はアプリケーション設定を表します
+type Config struct {
+	Filename   string
+	OutputJSON bool
+	Verbose    bool
+	CheckOnly  bool
 }
 
 func main() {
+	// コマンドライン引数の設定
+	config := parseFlags()
+
+	// 設定ファイルの存在確認
+	if err := validateFile(config.Filename); err != nil {
+		log.Fatalf("設定ファイルのエラー: %v", err)
+	}
+
 	// YAMLファイルを読み込む
-	filename := "monitoring-infrastructure.yaml"
-	yamlData, err := ioutil.ReadFile(filename)
+	yamlData, err := os.ReadFile(config.Filename)
 	if err != nil {
 		log.Fatalf("ファイルの読み込みに失敗しました: %v", err)
 	}
 
 	// YAMLをパースする
 	var infra MonitoringInfrastructure
-	err = yaml.Unmarshal(yamlData, &infra)
-	if err != nil {
+	if err := yaml.Unmarshal(yamlData, &infra); err != nil {
 		log.Fatalf("YAMLのパースに失敗しました: %v", err)
 	}
 
-	// 結果を表示
+	// 基本的な検証
+	if err := validateConfiguration(&infra); err != nil {
+		log.Fatalf("設定検証エラー: %v", err)
+	}
+
+	// 健全性チェックのみの場合
+	if config.CheckOnly {
+		results := runHealthChecks(&infra)
+		if config.OutputJSON {
+			printHealthCheckJSON(results)
+		} else {
+			printHealthCheckResults(results)
+		}
+		return
+	}
+
+	// 結果の出力
+	if config.OutputJSON {
+		printJSON(&infra)
+	} else {
+		printReport(&infra, config.Verbose)
+	}
+
+	// 健全性チェックの実行
+	results := runHealthChecks(&infra)
+	if config.OutputJSON {
+		printHealthCheckJSON(results)
+	} else {
+		printHealthCheckResults(results)
+	}
+}
+
+func parseFlags() Config {
+	var config Config
+	flag.StringVar(&config.Filename, "file", "monitoring-infrastructure.yaml", "監視インフラ設定ファイル")
+	flag.BoolVar(&config.OutputJSON, "json", false, "JSON形式で出力")
+	flag.BoolVar(&config.Verbose, "verbose", false, "詳細な情報を出力")
+	flag.BoolVar(&config.CheckOnly, "check", false, "健全性チェックのみ実行")
+	flag.Parse()
+	return config
+}
+
+func validateFile(filename string) error {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return fmt.Errorf("設定ファイルが見つかりません: %s", filename)
+	}
+
+	ext := filepath.Ext(filename)
+	if ext != ".yaml" && ext != ".yml" {
+		return fmt.Errorf("設定ファイルはYAML形式である必要があります")
+	}
+
+	return nil
+}
+
+func validateConfiguration(infra *MonitoringInfrastructure) error {
+	if infra.Version == "" {
+		return fmt.Errorf("バージョン情報が設定されていません")
+	}
+
+	if infra.ObservabilityPlatform.Name == "" {
+		return fmt.Errorf("観測プラットフォーム名が設定されていません")
+	}
+
+	if len(infra.ComputeMonitoring.Clusters) == 0 {
+		return fmt.Errorf("少なくとも1つのクラスターが設定されている必要があります")
+	}
+
+	return nil
+}
+
+func printJSON(infra *MonitoringInfrastructure) {
+	data, err := json.MarshalIndent(infra, "", "  ")
+	if err != nil {
+		log.Fatalf("JSON変換エラー: %v", err)
+	}
+	fmt.Println(string(data))
+}
+
+func printReport(infra *MonitoringInfrastructure, verbose bool) {
 	fmt.Println("===== 監視インフラストラクチャ分析レポート =====")
+	fmt.Printf("生成日時: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Printf("バージョン: %s\n", infra.Version)
-	fmt.Printf("プラットフォーム: %s (バージョン %s, 環境: %s)\n", 
+	fmt.Printf("プラットフォーム: %s (バージョン %s, 環境: %s)\n",
 		infra.ObservabilityPlatform.Name,
 		infra.ObservabilityPlatform.Version,
 		infra.ObservabilityPlatform.Environment)
 
 	// 監視ソリューションの詳細
-	fmt.Println("\n----- 監視ソリューション -----")
-	fmt.Printf("メトリクス収集: %s %s (保持期間: %s, スクレイプ間隔: %s)\n",
-		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Type,
-		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Version,
-		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.Retention,
-		infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.ScrapeInterval)
-	fmt.Printf("ログ集約: %s %s (保持期間: %s)\n",
-		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Type,
-		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Version,
-		infra.ObservabilityPlatform.MonitoringSolutions.LogAggregator.Retention)
-	fmt.Printf("トレーシング: %s %s (保持期間: %s)\n",
-		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Type,
-		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Version,
-		infra.ObservabilityPlatform.MonitoringSolutions.TracingSystem.Retention)
+	printMonitoringSolutions(infra)
 
 	// コンピュート監視の詳細
+	printComputeMonitoring(infra)
+
+	// アプリケーション監視の詳細
+	printApplicationMonitoring(infra)
+
+	if verbose {
+		printStorageMonitoring(infra)
+		printNetworkMonitoring(infra)
+		printSecurityMonitoring(infra)
+		printDashboards(infra)
+	}
+
+	// パフォーマンス設定の表示
+	printPerformance(infra)
+
+	// アラート通知チャネルのサマリー
+	printAlertProviders(infra)
+}
+
+func printMonitoringSolutions(infra *MonitoringInfrastructure) {
+	fmt.Println("\n----- 監視ソリューション -----")
+	sol := infra.ObservabilityPlatform.MonitoringSolutions
+	fmt.Printf("メトリクス収集: %s %s (保持期間: %s, スクレイプ間隔: %s)\n",
+		sol.MetricsCollector.Type,
+		sol.MetricsCollector.Version,
+		sol.MetricsCollector.Retention,
+		sol.MetricsCollector.ScrapeInterval)
+	fmt.Printf("ログ集約: %s %s (保持期間: %s)\n",
+		sol.LogAggregator.Type,
+		sol.LogAggregator.Version,
+		sol.LogAggregator.Retention)
+	fmt.Printf("トレーシング: %s %s (保持期間: %s)\n",
+		sol.TracingSystem.Type,
+		sol.TracingSystem.Version,
+		sol.TracingSystem.Retention)
+}
+
+func printComputeMonitoring(infra *MonitoringInfrastructure) {
 	fmt.Println("\n----- コンピュート監視 -----")
 	for name, cluster := range infra.ComputeMonitoring.Clusters {
 		fmt.Printf("クラスター: %s\n", name)
@@ -227,8 +356,9 @@ func main() {
 			cluster.Alerts.PodRestartThreshold)
 		fmt.Printf("  監視メトリクス: %s\n", strings.Join(cluster.Metrics, ", "))
 	}
+}
 
-	// アプリケーション監視の詳細
+func printApplicationMonitoring(infra *MonitoringInfrastructure) {
 	fmt.Println("\n----- アプリケーション監視 -----")
 	for _, service := range infra.ApplicationMonitoring.Services {
 		fmt.Printf("サービス: %s (%s)\n", service.Name, service.Type)
@@ -246,19 +376,85 @@ func main() {
 			}
 		}
 	}
+}
 
-	// パフォーマンス設定の表示
+func printStorageMonitoring(infra *MonitoringInfrastructure) {
+	fmt.Println("\n----- ストレージ監視 -----")
+	for _, system := range infra.StorageMonitoring.Systems {
+		fmt.Printf("システム: %s (%s)\n", system.Name, system.Type)
+		fmt.Printf("  メトリクス: %s\n", strings.Join(system.Metrics, ", "))
+		if len(system.Alerts) > 0 {
+			fmt.Println("  アラート設定:")
+			for k, v := range system.Alerts {
+				fmt.Printf("    %s: %v\n", k, v)
+			}
+		}
+	}
+}
+
+func printNetworkMonitoring(infra *MonitoringInfrastructure) {
+	fmt.Println("\n----- ネットワーク監視 -----")
+	for _, component := range infra.NetworkMonitoring.Components {
+		fmt.Printf("コンポーネント: %s\n", component.Name)
+		fmt.Printf("  メトリクス: %s\n", strings.Join(component.Metrics, ", "))
+		if len(component.Alerts) > 0 {
+			fmt.Println("  アラート設定:")
+			for k, v := range component.Alerts {
+				fmt.Printf("    %s: %v\n", k, v)
+			}
+		}
+	}
+}
+
+func printSecurityMonitoring(infra *MonitoringInfrastructure) {
+	fmt.Println("\n----- セキュリティ監視 -----")
+	for _, component := range infra.SecurityMonitoring.Components {
+		fmt.Printf("コンポーネント: %s", component.Name)
+		if component.Type != "" {
+			fmt.Printf(" (%s)", component.Type)
+		}
+		fmt.Printf("\n")
+		if component.Retention != "" {
+			fmt.Printf("  保持期間: %s\n", component.Retention)
+		}
+		fmt.Printf("  メトリクス: %s\n", strings.Join(component.Metrics, ", "))
+		if len(component.Alerts) > 0 {
+			fmt.Println("  アラート設定:")
+			for k, v := range component.Alerts {
+				fmt.Printf("    %s: %v\n", k, v)
+			}
+		}
+	}
+}
+
+func printDashboards(infra *MonitoringInfrastructure) {
+	fmt.Println("\n----- ダッシュボード -----")
+	for _, dashboard := range infra.Dashboards {
+		fmt.Printf("ダッシュボード: %s (%s)\n", dashboard.Name, dashboard.Type)
+		fmt.Printf("  更新間隔: %s\n", dashboard.RefreshInterval)
+		fmt.Printf("  パネル数: %d\n", len(dashboard.Panels))
+		for _, panel := range dashboard.Panels {
+			fmt.Printf("    - %s (%s)\n", panel.Name, panel.Type)
+		}
+	}
+}
+
+func printPerformance(infra *MonitoringInfrastructure) {
 	fmt.Println("\n----- パフォーマンスとスケーリング -----")
 	fmt.Printf("メトリクス取り込みレート: %d/秒\n", infra.Performance.MetricsIngestionRate)
 	fmt.Printf("ログ取り込みレート: %d/秒\n", infra.Performance.LogIngestionRate)
 	fmt.Printf("最大同時クエリ数: %d\n", infra.Performance.MaxConcurrentQueries)
-	fmt.Printf("自動スケーリング: %v (レプリカ: %d-%d, CPU目標使用率: %d%%)\n",
-		infra.Performance.AutoScaling.Enabled,
-		infra.Performance.AutoScaling.MinReplicas,
-		infra.Performance.AutoScaling.MaxReplicas,
-		infra.Performance.AutoScaling.TargetCPUUtilization)
+	fmt.Printf("自動スケーリング: %v", infra.Performance.AutoScaling.Enabled)
+	if infra.Performance.AutoScaling.Enabled {
+		fmt.Printf(" (レプリカ: %d-%d, CPU目標使用率: %d%%)",
+			infra.Performance.AutoScaling.MinReplicas,
+			infra.Performance.AutoScaling.MaxReplicas,
+			infra.Performance.AutoScaling.TargetCPUUtilization)
+	}
+	fmt.Printf("\n")
+}
 
-	// アラート通知チャネルのサマリーをテーブル形式で表示
+func printAlertProviders(infra *MonitoringInfrastructure) {
 	fmt.Println("\n----- アラート通知チャネル -----")
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "プロバイダー\tタイプ\t通知レベル/チャネル")
@@ -277,48 +473,132 @@ func main() {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", provider.Name, provider.Type, details)
 	}
 	w.Flush()
-
-	// 健全性チェックの実行
-	fmt.Println("\n----- システム健全性チェック -----")
-	runHealthChecks(&infra)
 }
 
 // runHealthChecks は監視設定の健全性をチェックします
-func runHealthChecks(infra *MonitoringInfrastructure) {
+func runHealthChecks(infra *MonitoringInfrastructure) []HealthCheckResult {
+	var results []HealthCheckResult
+
 	// Prometheusのスクレイプ間隔チェック
 	scrapeInterval := infra.ObservabilityPlatform.MonitoringSolutions.MetricsCollector.ScrapeInterval
 	if scrapeInterval == "15s" {
-		fmt.Println("✓ Prometheusのスクレイプ間隔は推奨値(15秒)に設定されています")
+		results = append(results, HealthCheckResult{
+			Status:  "✓",
+			Message: "Prometheusのスクレイプ間隔は推奨値(15秒)に設定されています",
+			Level:   "info",
+		})
 	} else {
-		fmt.Printf("⚠ Prometheusのスクレイプ間隔(%s)は推奨値(15秒)と異なります\n", scrapeInterval)
+		results = append(results, HealthCheckResult{
+			Status:  "⚠",
+			Message: fmt.Sprintf("Prometheusのスクレイプ間隔(%s)は推奨値(15秒)と異なります", scrapeInterval),
+			Level:   "warning",
+		})
 	}
 
 	// CPUしきい値チェック
 	for name, cluster := range infra.ComputeMonitoring.Clusters {
 		if cluster.Alerts.CPUThreshold > 85 {
-			fmt.Printf("⚠ クラスター'%s'のCPUしきい値(%d%%)が高すぎます。80%%以下を推奨します\n", 
-				name, cluster.Alerts.CPUThreshold)
+			results = append(results, HealthCheckResult{
+				Status:  "⚠",
+				Message: fmt.Sprintf("クラスター'%s'のCPUしきい値(%d%%)が高すぎます。80%%以下を推奨します", name, cluster.Alerts.CPUThreshold),
+				Level:   "warning",
+			})
 		} else {
-			fmt.Printf("✓ クラスター'%s'のCPUしきい値は適切です\n", name)
+			results = append(results, HealthCheckResult{
+				Status:  "✓",
+				Message: fmt.Sprintf("クラスター'%s'のCPUしきい値は適切です", name),
+				Level:   "info",
+			})
+		}
+	}
+
+	// メモリしきい値チェック
+	for name, cluster := range infra.ComputeMonitoring.Clusters {
+		if cluster.Alerts.MemoryThreshold > 90 {
+			results = append(results, HealthCheckResult{
+				Status:  "⚠",
+				Message: fmt.Sprintf("クラスター'%s'のメモリしきい値(%d%%)が高すぎます。85%%以下を推奨します", name, cluster.Alerts.MemoryThreshold),
+				Level:   "warning",
+			})
 		}
 	}
 
 	// バックアップ保持期間チェック
 	metricsRetention := infra.Backup.MetricsData.Retention
 	if metricsRetention == "90d" {
-		fmt.Println("✓ メトリクスデータのバックアップ保持期間は適切です")
+		results = append(results, HealthCheckResult{
+			Status:  "✓",
+			Message: "メトリクスデータのバックアップ保持期間は適切です",
+			Level:   "info",
+		})
 	} else {
-		fmt.Printf("ℹ メトリクスデータのバックアップ保持期間(%s)は標準的な90日と異なります\n", metricsRetention)
+		results = append(results, HealthCheckResult{
+			Status:  "ℹ",
+			Message: fmt.Sprintf("メトリクスデータのバックアップ保持期間(%s)は標準的な90日と異なります", metricsRetention),
+			Level:   "info",
+		})
 	}
 
 	// 自動スケーリングチェック
 	if infra.Performance.AutoScaling.Enabled {
-		fmt.Println("✓ 自動スケーリングが有効になっています")
+		results = append(results, HealthCheckResult{
+			Status:  "✓",
+			Message: "自動スケーリングが有効になっています",
+			Level:   "info",
+		})
+		
 		if infra.Performance.AutoScaling.MaxReplicas < 3 {
-			fmt.Printf("⚠ 最大レプリカ数(%d)が少なすぎる可能性があります。高可用性のために3以上を推奨します\n",
-				infra.Performance.AutoScaling.MaxReplicas)
+			results = append(results, HealthCheckResult{
+				Status:  "⚠",
+				Message: fmt.Sprintf("最大レプリカ数(%d)が少なすぎる可能性があります。高可用性のために3以上を推奨します", infra.Performance.AutoScaling.MaxReplicas),
+				Level:   "warning",
+			})
+		}
+		
+		if infra.Performance.AutoScaling.TargetCPUUtilization > 80 {
+			results = append(results, HealthCheckResult{
+				Status:  "⚠",
+				Message: fmt.Sprintf("CPU使用率目標(%d%%)が高すぎます。70%%以下を推奨します", infra.Performance.AutoScaling.TargetCPUUtilization),
+				Level:   "warning",
+			})
 		}
 	} else {
-		fmt.Println("⚠ 自動スケーリングが無効になっています。高負荷時の可用性を確保するために有効化を検討してください")
+		results = append(results, HealthCheckResult{
+			Status:  "⚠",
+			Message: "自動スケーリングが無効になっています。高負荷時の可用性を確保するために有効化を検討してください",
+			Level:   "warning",
+		})
 	}
+
+	// アラート通知設定チェック
+	if len(infra.Alerting.Providers) == 0 {
+		results = append(results, HealthCheckResult{
+			Status:  "✗",
+			Message: "アラート通知プロバイダーが設定されていません",
+			Level:   "error",
+		})
+	} else {
+		results = append(results, HealthCheckResult{
+			Status:  "✓",
+			Message: fmt.Sprintf("アラート通知プロバイダーが%d個設定されています", len(infra.Alerting.Providers)),
+			Level:   "info",
+		})
+	}
+
+	return results
+}
+
+func printHealthCheckResults(results []HealthCheckResult) {
+	fmt.Println("\n----- システム健全性チェック -----")
+	for _, result := range results {
+		fmt.Printf("%s %s\n", result.Status, result.Message)
+	}
+}
+
+func printHealthCheckJSON(results []HealthCheckResult) {
+	data, err := json.MarshalIndent(results, "", "  ")
+	if err != nil {
+		log.Fatalf("JSON変換エラー: %v", err)
+	}
+	fmt.Println(string(data))
 }
