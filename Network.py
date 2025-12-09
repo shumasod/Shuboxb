@@ -1,6 +1,5 @@
 import random
 
-# ネットワークの状況を表すクラス
 class NetworkStatus:
     def __init__(self, name, loss_rate):
         self.name = name
